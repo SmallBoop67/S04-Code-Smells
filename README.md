@@ -10,7 +10,7 @@
 
 
 
-## Code Smell 2 
+## Code Smell 2 - Long Function - Dan Pokhrel
 ### Intro 
 
 
