@@ -29,3 +29,14 @@
 
 
 ### Code Examples Across Languages
+
+
+
+## Code Smell 4 
+### Intro 
+
+
+### Prevention and Refactoring 
+
+
+### Code Examples Across Languages
