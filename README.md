@@ -77,345 +77,580 @@ Most of the time, long functions can be refactored through Extract Function. Lon
 
 ### Example showing **Long Function**
 ```rust
-    pub fn ray_cast(
-        &mut self,
-        mode: i32,
-        ox: f32,
-        oy: f32,
-        oz: f32,
-        dx: f32,
-        dy: f32,
-        dz: f32,
-    ) -> Vec<i32> {
-        if self.arr.is_none() {
-            return vec![
-                0,
-                i32::MAX,
-                i32::MAX,
-                i32::MAX,
-                0,
-                i32::MAX,
-                i32::MAX,
-                i32::MAX,
-            ];
-        }
-        let arr = self.arr.as_mut().unwrap();
+pub fn ray_cast(
+    &mut self,
+    mode: i32,
+    ox: f32,
+    oy: f32,
+    oz: f32,
+    dx: f32,
+    dy: f32,
+    dz: f32,
+) -> Vec<i32> {
+    if self.arr.is_none() {
+        return vec![
+            0,
+            i32::MAX,
+            i32::MAX,
+            i32::MAX,
+            0,
+            i32::MAX,
+            i32::MAX,
+            i32::MAX,
+        ];
+    }
+    let arr = self.arr.as_mut().unwrap();
 
-        // Transform to local coordinates
-        let mut local_ox = ox - self.origin.0 as f32;
-        let mut local_oy = oy - self.origin.1 as f32;
-        let mut local_oz = oz - self.origin.2 as f32;
+    // Transform to local coordinates
+    let mut local_ox = ox - self.origin.0 as f32;
+    let mut local_oy = oy - self.origin.1 as f32;
+    let mut local_oz = oz - self.origin.2 as f32;
 
-        // Compute entry point into the chunk bounding box
-        let mut t_min = 0.0f32;
-        let mut t_max = f32::INFINITY;
-        let mut t_min_x = f32::NEG_INFINITY;
-        let mut t_min_y = f32::NEG_INFINITY;
-        let mut t_min_z = f32::NEG_INFINITY;
+    // Compute entry point into the chunk bounding box
+    let mut t_min = 0.0f32;
+    let mut t_max = f32::INFINITY;
+    let mut t_min_x = f32::NEG_INFINITY;
+    let mut t_min_y = f32::NEG_INFINITY;
+    let mut t_min_z = f32::NEG_INFINITY;
 
-        // For x
-        if dx != 0.0 {
-            let t1 = (0.0 - local_ox) / dx;
-            let t2 = (SIZE as f32 - local_ox) / dx;
-            t_min_x = t1.min(t2);
-            let t_max_x = t1.max(t2);
-            t_min = t_min.max(t_min_x);
-            t_max = t_max.min(t_max_x);
-        } else if local_ox < 0.0 || local_ox >= SIZE as f32 {
-            return vec![
-                0,
-                i32::MAX,
-                i32::MAX,
-                i32::MAX,
-                0,
-                i32::MAX,
-                i32::MAX,
-                i32::MAX,
-            ];
-        }
+    // For x
+    if dx != 0.0 {
+        let t1 = (0.0 - local_ox) / dx;
+        let t2 = (SIZE as f32 - local_ox) / dx;
+        t_min_x = t1.min(t2);
+        let t_max_x = t1.max(t2);
+        t_min = t_min.max(t_min_x);
+        t_max = t_max.min(t_max_x);
+    } else if local_ox < 0.0 || local_ox >= SIZE as f32 {
+        return vec![
+            0,
+            i32::MAX,
+            i32::MAX,
+            i32::MAX,
+            0,
+            i32::MAX,
+            i32::MAX,
+            i32::MAX,
+        ];
+    }
 
-        // For y
-        if dy != 0.0 {
-            let t1 = (0.0 - local_oy) / dy;
-            let t2 = (SIZE as f32 - local_oy) / dy;
-            t_min_y = t1.min(t2);
-            let t_max_y = t1.max(t2);
-            t_min = t_min.max(t_min_y);
-            t_max = t_max.min(t_max_y);
-        } else if local_oy < 0.0 || local_oy >= SIZE as f32 {
-            return vec![
-                0,
-                i32::MAX,
-                i32::MAX,
-                i32::MAX,
-                0,
-                i32::MAX,
-                i32::MAX,
-                i32::MAX,
-            ];
-        }
+    // For y
+    if dy != 0.0 {
+        let t1 = (0.0 - local_oy) / dy;
+        let t2 = (SIZE as f32 - local_oy) / dy;
+        t_min_y = t1.min(t2);
+        let t_max_y = t1.max(t2);
+        t_min = t_min.max(t_min_y);
+        t_max = t_max.min(t_max_y);
+    } else if local_oy < 0.0 || local_oy >= SIZE as f32 {
+        return vec![
+            0,
+            i32::MAX,
+            i32::MAX,
+            i32::MAX,
+            0,
+            i32::MAX,
+            i32::MAX,
+            i32::MAX,
+        ];
+    }
 
-        // For z
-        if dz != 0.0 {
-            let t1 = (0.0 - local_oz) / dz;
-            let t2 = (SIZE as f32 - local_oz) / dz;
-            t_min_z = t1.min(t2);
-            let t_max_z = t1.max(t2);
-            t_min = t_min.max(t_min_z);
-            t_max = t_max.min(t_max_z);
-        } else if local_oz < 0.0 || local_oz >= SIZE as f32 {
-            return vec![
-                0,
-                i32::MAX,
-                i32::MAX,
-                i32::MAX,
-                0,
-                i32::MAX,
-                i32::MAX,
-                i32::MAX,
-            ];
-        }
+    // For z
+    if dz != 0.0 {
+        let t1 = (0.0 - local_oz) / dz;
+        let t2 = (SIZE as f32 - local_oz) / dz;
+        t_min_z = t1.min(t2);
+        let t_max_z = t1.max(t2);
+        t_min = t_min.max(t_min_z);
+        t_max = t_max.min(t_max_z);
+    } else if local_oz < 0.0 || local_oz >= SIZE as f32 {
+        return vec![
+            0,
+            i32::MAX,
+            i32::MAX,
+            i32::MAX,
+            0,
+            i32::MAX,
+            i32::MAX,
+            i32::MAX,
+        ];
+    }
 
-        if t_min > t_max {
-            return vec![
-                0,
-                i32::MAX,
-                i32::MAX,
-                i32::MAX,
-                0,
-                i32::MAX,
-                i32::MAX,
-                i32::MAX,
-            ];
-        }
+    if t_min > t_max {
+        return vec![
+            0,
+            i32::MAX,
+            i32::MAX,
+            i32::MAX,
+            0,
+            i32::MAX,
+            i32::MAX,
+            i32::MAX,
+        ];
+    }
 
-        let entry_step_x = if t_min > 0.0 && dx != 0.0 && (t_min - t_min_x).abs() < 1e-6 {
-            if dx > 0.0 {
-                1
-            } else {
-                -1
-            }
-        } else {
-            0
-        };
-        let entry_step_y = if t_min > 0.0 && dy != 0.0 && (t_min - t_min_y).abs() < 1e-6 {
-            if dy > 0.0 {
-                1
-            } else {
-                -1
-            }
-        } else {
-            0
-        };
-        let entry_step_z = if t_min > 0.0 && dz != 0.0 && (t_min - t_min_z).abs() < 1e-6 {
-            if dz > 0.0 {
-                1
-            } else {
-                -1
-            }
-        } else {
-            0
-        };
-
-        // Move to entry point
-        local_ox += dx * t_min;
-        local_oy += dy * t_min;
-        local_oz += dz * t_min;
-
-        // Current voxel
-        let mut x = local_ox.floor() as i32;
-        let mut y = local_oy.floor() as i32;
-        let mut z = local_oz.floor() as i32;
-
-        // Step directions
-        let step_x = if dx > 0.0 {
+    let entry_step_x = if t_min > 0.0 && dx != 0.0 && (t_min - t_min_x).abs() < 1e-6 {
+        if dx > 0.0 {
             1
-        } else if dx < 0.0 {
-            -1
         } else {
-            0
-        };
-        let step_y = if dy > 0.0 {
-            1
-        } else if dy < 0.0 {
             -1
-        } else {
-            0
-        };
-        let step_z = if dz > 0.0 {
-            1
-        } else if dz < 0.0 {
-            -1
-        } else {
-            0
-        };
-
-        let mut face_step_x = entry_step_x;
-        let mut face_step_y = entry_step_y;
-        let mut face_step_z = entry_step_z;
-        if face_step_x == 0 && face_step_y == 0 && face_step_z == 0 {
-            if dx.abs() >= dy.abs() && dx.abs() >= dz.abs() {
-                face_step_x = step_x;
-            } else if dy.abs() >= dx.abs() && dy.abs() >= dz.abs() {
-                face_step_y = step_y;
-            } else {
-                face_step_z = step_z;
-            }
         }
+    } else {
+        0
+    };
+    let entry_step_y = if t_min > 0.0 && dy != 0.0 && (t_min - t_min_y).abs() < 1e-6 {
+        if dy > 0.0 {
+            1
+        } else {
+            -1
+        }
+    } else {
+        0
+    };
+    let entry_step_z = if t_min > 0.0 && dz != 0.0 && (t_min - t_min_z).abs() < 1e-6 {
+        if dz > 0.0 {
+            1
+        } else {
+            -1
+        }
+    } else {
+        0
+    };
 
-        // tMax calculations
-        let mut t_max_x = if step_x > 0 {
-            ((x as f32) + 1.0 - local_ox) / dx
-        } else if step_x < 0 {
-            ((x as f32) - local_ox) / dx
-        } else {
-            f32::INFINITY
-        };
-        let mut t_max_y = if step_y > 0 {
-            ((y as f32) + 1.0 - local_oy) / dy
-        } else if step_y < 0 {
-            ((y as f32) - local_oy) / dy
-        } else {
-            f32::INFINITY
-        };
-        let mut t_max_z = if step_z > 0 {
-            ((z as f32) + 1.0 - local_oz) / dz
-        } else if step_z < 0 {
-            ((z as f32) - local_oz) / dz
-        } else {
-            f32::INFINITY
-        };
+    // Move to entry point
+    local_ox += dx * t_min;
+    local_oy += dy * t_min;
+    local_oz += dz * t_min;
 
-        // tDelta
-        let t_delta_x = if step_x != 0 {
-            step_x as f32 / dx
-        } else {
-            f32::INFINITY
-        };
-        let t_delta_y = if step_y != 0 {
-            step_y as f32 / dy
-        } else {
-            f32::INFINITY
-        };
-        let t_delta_z = if step_z != 0 {
-            step_z as f32 / dz
-        } else {
-            f32::INFINITY
-        };
+    // Current voxel
+    let mut x = local_ox.floor() as i32;
+    let mut y = local_oy.floor() as i32;
+    let mut z = local_oz.floor() as i32;
 
-        // Traverse
-        for _ in 0..(SIZE * 3) {
-            if x >= 0 && x < SIZE as i32 && y >= 0 && y < SIZE as i32 && z >= 0 && z < SIZE as i32 {
-                let idx = xyz_idx(x as u8, y as u8, z as u8);
-                let voxel_id = arr[idx];
-                if voxel_id != 0 {
-                    let mut modified_x = x;
-                    let mut modified_y = y;
-                    let mut modified_z = z;
+    // Step directions
+    let step_x = if dx > 0.0 {
+        1
+    } else if dx < 0.0 {
+        -1
+    } else {
+        0
+    };
+    let step_y = if dy > 0.0 {
+        1
+    } else if dy < 0.0 {
+        -1
+    } else {
+        0
+    };
+    let step_z = if dz > 0.0 {
+        1
+    } else if dz < 0.0 {
+        -1
+    } else {
+        0
+    };
 
-                    if mode == 0 {
-                        arr[idx] = 0;
-                    } else if mode > 0 {
-                        let target_x = x - face_step_x;
-                        let target_y = y - face_step_y;
-                        let target_z = z - face_step_z;
-                        if target_x >= 0
-                            && target_x < SIZE as i32
-                            && target_y >= 0
-                            && target_y < SIZE as i32
-                            && target_z >= 0
-                            && target_z < SIZE as i32
-                        {
-                            let target_idx =
-                                xyz_idx(target_x as u8, target_y as u8, target_z as u8);
-                            arr[target_idx] = mode as u8;
-                            modified_x = target_x;
-                            modified_y = target_y;
-                            modified_z = target_z;
-                        }
+    let mut face_step_x = entry_step_x;
+    let mut face_step_y = entry_step_y;
+    let mut face_step_z = entry_step_z;
+    if face_step_x == 0 && face_step_y == 0 && face_step_z == 0 {
+        if dx.abs() >= dy.abs() && dx.abs() >= dz.abs() {
+            face_step_x = step_x;
+        } else if dy.abs() >= dx.abs() && dy.abs() >= dz.abs() {
+            face_step_y = step_y;
+        } else {
+            face_step_z = step_z;
+        }
+    }
+
+    // tMax calculations
+    let mut t_max_x = if step_x > 0 {
+        ((x as f32) + 1.0 - local_ox) / dx
+    } else if step_x < 0 {
+        ((x as f32) - local_ox) / dx
+    } else {
+        f32::INFINITY
+    };
+    let mut t_max_y = if step_y > 0 {
+        ((y as f32) + 1.0 - local_oy) / dy
+    } else if step_y < 0 {
+        ((y as f32) - local_oy) / dy
+    } else {
+        f32::INFINITY
+    };
+    let mut t_max_z = if step_z > 0 {
+        ((z as f32) + 1.0 - local_oz) / dz
+    } else if step_z < 0 {
+        ((z as f32) - local_oz) / dz
+    } else {
+        f32::INFINITY
+    };
+
+    // tDelta
+    let t_delta_x = if step_x != 0 {
+        step_x as f32 / dx
+    } else {
+        f32::INFINITY
+    };
+    let t_delta_y = if step_y != 0 {
+        step_y as f32 / dy
+    } else {
+        f32::INFINITY
+    };
+    let t_delta_z = if step_z != 0 {
+        step_z as f32 / dz
+    } else {
+        f32::INFINITY
+    };
+
+    // Traverse
+    for _ in 0..(SIZE * 3) {
+        if x >= 0 && x < SIZE as i32 && y >= 0 && y < SIZE as i32 && z >= 0 && z < SIZE as i32 {
+            let idx = xyz_idx(x as u8, y as u8, z as u8);
+            let voxel_id = arr[idx];
+            if voxel_id != 0 {
+                let mut modified_x = x;
+                let mut modified_y = y;
+                let mut modified_z = z;
+
+                if mode == 0 {
+                    arr[idx] = 0;
+                } else if mode > 0 {
+                    let target_x = x - face_step_x;
+                    let target_y = y - face_step_y;
+                    let target_z = z - face_step_z;
+                    if target_x >= 0
+                        && target_x < SIZE as i32
+                        && target_y >= 0
+                        && target_y < SIZE as i32
+                        && target_z >= 0
+                        && target_z < SIZE as i32
+                    {
+                        let target_idx =
+                            xyz_idx(target_x as u8, target_y as u8, target_z as u8);
+                        arr[target_idx] = mode as u8;
+                        modified_x = target_x;
+                        modified_y = target_y;
+                        modified_z = target_z;
                     }
-
-                    let status = if modified_x == 0
-                        || modified_x == (SIZE as i32 - 1)
-                        || modified_y == 0
-                        || modified_y == (SIZE as i32 - 1)
-                        || modified_z == 0
-                        || modified_z == (SIZE as i32 - 1)
-                    {
-                        2
-                    } else if modified_x == 1
-                        || modified_x == (SIZE as i32 - 2)
-                        || modified_y == 1
-                        || modified_y == (SIZE as i32 - 2)
-                        || modified_z == 1
-                        || modified_z == (SIZE as i32 - 2)
-                    {
-                        1
-                    } else {
-                        0
-                    };
-
-                    return vec![
-                        voxel_id as i32,
-                        x,
-                        y,
-                        z,
-                        status,
-                        modified_x,
-                        modified_y,
-                        modified_z,
-                    ];
                 }
-            } else {
+
+                let status = if modified_x == 0
+                    || modified_x == (SIZE as i32 - 1)
+                    || modified_y == 0
+                    || modified_y == (SIZE as i32 - 1)
+                    || modified_z == 0
+                    || modified_z == (SIZE as i32 - 1)
+                {
+                    2
+                } else if modified_x == 1
+                    || modified_x == (SIZE as i32 - 2)
+                    || modified_y == 1
+                    || modified_y == (SIZE as i32 - 2)
+                    || modified_z == 1
+                    || modified_z == (SIZE as i32 - 2)
+                {
+                    1
+                } else {
+                    0
+                };
+
                 return vec![
-                    0,
-                    i32::MAX,
-                    i32::MAX,
-                    i32::MAX,
-                    0,
-                    i32::MAX,
-                    i32::MAX,
-                    i32::MAX,
+                    voxel_id as i32,
+                    x,
+                    y,
+                    z,
+                    status,
+                    modified_x,
+                    modified_y,
+                    modified_z,
                 ];
             }
-
-            if t_max_x < t_max_y && t_max_x < t_max_z {
-                x += step_x;
-                face_step_x = step_x;
-                face_step_y = 0;
-                face_step_z = 0;
-                t_max_x += t_delta_x;
-            } else if t_max_y < t_max_z {
-                y += step_y;
-                face_step_x = 0;
-                face_step_y = step_y;
-                face_step_z = 0;
-                t_max_y += t_delta_y;
-            } else {
-                z += step_z;
-                face_step_x = 0;
-                face_step_y = 0;
-                face_step_z = step_z;
-                t_max_z += t_delta_z;
-            }
+        } else {
+            return vec![
+                0,
+                i32::MAX,
+                i32::MAX,
+                i32::MAX,
+                0,
+                i32::MAX,
+                i32::MAX,
+                i32::MAX,
+            ];
         }
 
-        vec![
-            0,
-            i32::MAX,
-            i32::MAX,
-            i32::MAX,
-            0,
-            i32::MAX,
-            i32::MAX,
-            i32::MAX,
-        ]
+        if t_max_x < t_max_y && t_max_x < t_max_z {
+            x += step_x;
+            face_step_x = step_x;
+            face_step_y = 0;
+            face_step_z = 0;
+            t_max_x += t_delta_x;
+        } else if t_max_y < t_max_z {
+            y += step_y;
+            face_step_x = 0;
+            face_step_y = step_y;
+            face_step_z = 0;
+            t_max_y += t_delta_y;
+        } else {
+            z += step_z;
+            face_step_x = 0;
+            face_step_y = 0;
+            face_step_z = step_z;
+            t_max_z += t_delta_z;
+        }
     }
+
+    vec![
+        0,
+        i32::MAX,
+        i32::MAX,
+        i32::MAX,
+        0,
+        i32::MAX,
+        i32::MAX,
+        i32::MAX,
+    ]
 }
 ```
 
 ### Refactored using **Extract Function**
 ```rust
+pub fn ray_cast(
+    &mut self,
+    mode: i32,
+    ox: f32,
+    oy: f32,
+    oz: f32,
+    dx: f32,
+    dy: f32,
+    dz: f32,
+) -> Vec<i32> {
+    if self.arr.is_none() {
+        return miss();
+    }
+    let arr = self.arr.as_mut().unwrap();
+
+    // Transform to local coordinates
+    let mut local_ox = ox - self.origin.0 as f32;
+    let mut local_oy = oy - self.origin.1 as f32;
+    let mut local_oz = oz - self.origin.2 as f32;
+
+    // Compute entry point into the chunk bounding box
+    let Some((t_min_x, t_max_x)) = axis_interval(local_ox, dx) else { return miss() };
+    let Some((t_min_y, t_max_y)) = axis_interval(local_oy, dy) else { return miss() };
+    let Some((t_min_z, t_max_z)) = axis_interval(local_oz, dz) else { return miss() };
+
+    let t_min = t_min_x.max(t_min_y).max(t_min_z).max(0.0);
+    let t_max = t_max_x.min(t_max_y).min(t_max_z);
+    if t_min > t_max {
+        return miss();
+    }
+
+    // Which face of the chunk did the ray enter through?
+    let entry_step_x = entry_face_step(t_min, t_min_x, dx);
+    let entry_step_y = entry_face_step(t_min, t_min_y, dy);
+    let entry_step_z = entry_face_step(t_min, t_min_z, dz);
+
+    // Move to entry point
+    local_ox = advance_to_entry(local_ox, dx, t_min);
+    local_oy = advance_to_entry(local_oy, dy, t_min);
+    local_oz = advance_to_entry(local_oz, dz, t_min);
+
+    // Current voxel
+    let mut x = local_ox.floor() as i32;
+    let mut y = local_oy.floor() as i32;
+    let mut z = local_oz.floor() as i32;
+
+    // Step directions
+    let step_x = step_direction(dx);
+    let step_y = step_direction(dy);
+    let step_z = step_direction(dz);
+
+    let mut face_step_x = entry_step_x;
+    let mut face_step_y = entry_step_y;
+    let mut face_step_z = entry_step_z;
+    if face_step_x == 0 && face_step_y == 0 && face_step_z == 0 {
+        // Ray started inside the chunk: step along the dominant axis instead
+        if dx.abs() >= dy.abs() && dx.abs() >= dz.abs() {
+            face_step_x = step_x;
+        } else if dy.abs() >= dx.abs() && dy.abs() >= dz.abs() {
+            face_step_y = step_y;
+        } else {
+            face_step_z = step_z;
+        }
+    }
+
+    // tMax calculations
+    let mut t_max_x = t_max_to_boundary(x, local_ox, step_x, dx);
+    let mut t_max_y = t_max_to_boundary(y, local_oy, step_y, dy);
+    let mut t_max_z = t_max_to_boundary(z, local_oz, step_z, dz);
+
+    // tDelta
+    let t_delta_x = t_delta(step_x, dx);
+    let t_delta_y = t_delta(step_y, dy);
+    let t_delta_z = t_delta(step_z, dz);
+
+    // Traverse
+    for _ in 0..(SIZE * 3) {
+        if in_bounds(x, y, z) {
+            let idx = xyz_idx(x as u8, y as u8, z as u8);
+            let voxel_id = arr[idx];
+            if voxel_id != 0 {
+                let (modified_x, modified_y, modified_z) =
+                    apply_edit(arr, mode, x, y, z, face_step_x, face_step_y, face_step_z);
+                let status = boundary_status(modified_x, modified_y, modified_z);
+                return vec![voxel_id as i32, x, y, z, status, modified_x, modified_y, modified_z];
+            }
+        } else {
+            return miss();
+        }
+
+        if t_max_x < t_max_y && t_max_x < t_max_z {
+            x += step_x;
+            face_step_x = step_x;
+            face_step_y = 0;
+            face_step_z = 0;
+            t_max_x += t_delta_x;
+        } else if t_max_y < t_max_z {
+            y += step_y;
+            face_step_x = 0;
+            face_step_y = step_y;
+            face_step_z = 0;
+            t_max_y += t_delta_y;
+        } else {
+            z += step_z;
+            face_step_x = 0;
+            face_step_y = 0;
+            face_step_z = step_z;
+            t_max_z += t_delta_z;
+        }
+    }
+
+    miss()
+}
+
+/// The result returned when the ray hits nothing.
+fn miss() -> Vec<i32> {
+    vec![0, i32::MAX, i32::MAX, i32::MAX, 0, i32::MAX, i32::MAX, i32::MAX]
+}
+
+/// t-interval [entry, exit] where the ray overlaps the chunk's [0, SIZE) slab on one
+/// axis, or None when the ray is parallel to the axis and starts outside it.
+fn axis_interval(origin: f32, direction: f32) -> Option<(f32, f32)> {
+    if direction != 0.0 {
+        let t1 = (0.0 - origin) / direction;
+        let t2 = (SIZE as f32 - origin) / direction;
+        Some((t1.min(t2), t1.max(t2)))
+    } else if origin < 0.0 || origin >= SIZE as f32 {
+        None
+    } else {
+        Some((f32::NEG_INFINITY, f32::INFINITY))
+    }
+}
+
+/// Step to take back along an axis when the ray entered through that axis's face.
+fn entry_face_step(t_min: f32, t_min_axis: f32, direction: f32) -> i32 {
+    if t_min > 0.0 && direction != 0.0 && (t_min - t_min_axis).abs() < 1e-6 {
+        if direction > 0.0 { 1 } else { -1 }
+    } else {
+        0
+    }
+}
+
+fn advance_to_entry(origin: f32, direction: f32, t: f32) -> f32 {
+    origin + direction * t
+}
+
+fn step_direction(direction: f32) -> i32 {
+    if direction > 0.0 {
+        1
+    } else if direction < 0.0 {
+        -1
+    } else {
+        0
+    }
+}
+
+/// t at which the traversal crosses the next voxel boundary along one axis.
+fn t_max_to_boundary(voxel: i32, origin: f32, step: i32, direction: f32) -> f32 {
+    if step > 0 {
+        (voxel as f32 + 1.0 - origin) / direction
+    } else if step < 0 {
+        (voxel as f32 - origin) / direction
+    } else {
+        f32::INFINITY
+    }
+}
+
+/// t needed to cross one full voxel along one axis.
+fn t_delta(step: i32, direction: f32) -> f32 {
+    if step != 0 {
+        step as f32 / direction
+    } else {
+        f32::INFINITY
+    }
+}
+
+fn in_bounds(x: i32, y: i32, z: i32) -> bool {
+    x >= 0 && x < SIZE as i32 && y >= 0 && y < SIZE as i32 && z >= 0 && z < SIZE as i32
+}
+
+/// Apply the edit mode at the hit voxel; returns the voxel the edit landed on.
+fn apply_edit(
+    arr: &mut [u8],
+    mode: i32,
+    x: i32,
+    y: i32,
+    z: i32,
+    face_step_x: i32,
+    face_step_y: i32,
+    face_step_z: i32,
+) -> (i32, i32, i32) {
+    let mut modified_x = x;
+    let mut modified_y = y;
+    let mut modified_z = z;
+
+    let idx = xyz_idx(x as u8, y as u8, z as u8);
+    if mode == 0 {
+        arr[idx] = 0;
+    } else if mode > 0 {
+        let target_x = x - face_step_x;
+        let target_y = y - face_step_y;
+        let target_z = z - face_step_z;
+        if in_bounds(target_x, target_y, target_z) {
+            let target_idx = xyz_idx(target_x as u8, target_y as u8, target_z as u8);
+            arr[target_idx] = mode as u8;
+            modified_x = target_x;
+            modified_y = target_y;
+            modified_z = target_z;
+        }
+    }
+
+    (modified_x, modified_y, modified_z)
+}
+
+/// 2 on the outermost shell of the chunk, 1 on the next shell in, 0 deeper inside.
+fn boundary_status(x: i32, y: i32, z: i32) -> i32 {
+    if x == 0
+        || x == (SIZE as i32 - 1)
+        || y == 0
+        || y == (SIZE as i32 - 1)
+        || z == 0
+        || z == (SIZE as i32 - 1)
+    {
+        2
+    } else if x == 1
+        || x == (SIZE as i32 - 2)
+        || y == 1
+        || y == (SIZE as i32 - 2)
+        || z == 1
+        || z == (SIZE as i32 - 2)
+    {
+        1
+    } else {
+        0
+    }
+}
 ```
 
 ### Another ***Long Function***
@@ -615,8 +850,248 @@ void Simulate()
 }
 ```
 
-### Refactored using **Long Function**
+### Refactored using **Extract Function**
 ```c#
+void Simulate()
+{
+    Rect2 renderRect = data_node.get_render_rect();
+    renderRect.Position += new Vector2(1, 1);
+    renderRect.Size -= new Vector2(2, 2);
+
+    Dictionary<Vector2, float> changes = new Dictionary<Vector2, float>();
+
+    SimulateCells(renderRect, changes);
+    ApplyChanges(changes);
+
+    Update();
+}
+
+void SimulateCells(Rect2 renderRect, Dictionary<Vector2, float> changes)
+{
+    for (int x = (int)renderRect.Position.x; x < renderRect.End.x; x++)
+    for (int y = (int)renderRect.Position.y; y < renderRect.End.y; y++)
+    {
+        SimulateCell(x, y, changes);
+    }
+}
+
+void SimulateCell(int x, int y, Dictionary<Vector2, float> changes)
+{
+    Block block = data_node.get_blockb(x, y, layer.Id);
+    if (block.Id != BlockId) return;
+
+    if (block.liquid == 0) block.liquid = 1;
+    if (block.liquid < MinValue)
+    {
+        block.liquid = 0f;
+        return;
+    }
+    if (block.settled) return;
+
+    float startValue = block.liquid;
+    float remainingValue = block.liquid;
+
+    ref Block top = ref data_node.get_blockb(x, y - 1, layer.Id);
+    ref Block right = ref data_node.get_blockb(x + 1, y, layer.Id);
+    ref Block bottom = ref data_node.get_blockb(x, y + 1, layer.Id);
+    ref Block left = ref data_node.get_blockb(x - 1, y, layer.Id);
+
+    Vector2 curPos = new Vector2(x, y);
+    Vector2 topPos = new Vector2(x, y - 1);
+    Vector2 rightPos = new Vector2(x + 1, y);
+    Vector2 bottomPos = new Vector2(x, y + 1);
+    Vector2 leftPos = new Vector2(x - 1, y);
+
+    InitializeChanges(changes, curPos, topPos, rightPos, bottomPos, leftPos);
+
+    if (VerticalOnly)
+    {
+        FlowVerticalOnly(x, y, ref bottom, changes);
+        return;
+    }
+
+    remainingValue = FlowDown(block, ref bottom, remainingValue, curPos, bottomPos, changes);
+    if (remainingValue < MinValue)
+    {
+        changes[curPos] -= remainingValue;
+        return;
+    }
+
+    remainingValue = FlowLeft(ref left, remainingValue, curPos, leftPos, changes);
+    if (remainingValue < MinValue)
+    {
+        changes[curPos] -= remainingValue;
+        return;
+    }
+
+    remainingValue = FlowRight(ref right, remainingValue, curPos, rightPos, changes);
+    if (remainingValue < MinValue)
+    {
+        changes[curPos] -= remainingValue;
+        return;
+    }
+
+    remainingValue = FlowUp(ref top, remainingValue, curPos, topPos, changes);
+    if (remainingValue < MinValue)
+    {
+        changes[curPos] -= remainingValue;
+        return;
+    }
+
+    UpdateSettling(ref block, ref top, ref right, ref bottom, ref left, startValue, remainingValue);
+}
+
+void InitializeChanges(Dictionary<Vector2, float> changes, Vector2 curPos, Vector2 topPos, Vector2 rightPos, Vector2 bottomPos, Vector2 leftPos)
+{
+    if (!changes.ContainsKey(curPos)) changes[curPos] = 0;
+    if (!changes.ContainsKey(topPos)) changes[topPos] = 0;
+    if (!changes.ContainsKey(rightPos)) changes[rightPos] = 0;
+    if (!changes.ContainsKey(bottomPos)) changes[bottomPos] = 0;
+    if (!changes.ContainsKey(leftPos)) changes[leftPos] = 0;
+}
+
+void FlowVerticalOnly(int x, int y, ref Block bottom, Dictionary<Vector2, float> changes)
+{
+    if (bottom.Id == 0)
+    {
+        changes[new Vector2(x, y)] = -1;
+        changes[new Vector2(x, y + 1)] = 1;
+    }
+}
+
+float FlowDown(Block block, ref Block bottom, float remainingValue, Vector2 curPos, Vector2 bottomPos, Dictionary<Vector2, float> changes)
+{
+    if (bottom.Id == 0 || bottom.Id == BlockId)
+    {
+        float flow = CalcVertFlow(block.liquid, bottom) - bottom.liquid;
+        if (bottom.liquid > 0 && flow > MinFlow)
+            flow *= FlowSpeed;
+
+        flow = Mathf.Max(flow, 0);
+        if (flow > Mathf.Min(MaxFlow, block.liquid))
+            flow = Mathf.Min(MaxFlow, block.liquid);
+
+        if (flow != 0)
+        {
+            remainingValue -= flow;
+            changes[curPos] -= flow;
+            changes[bottomPos] += flow;
+            bottom.settled = false;
+        }
+    }
+
+    return remainingValue;
+}
+
+float FlowLeft(ref Block left, float remainingValue, Vector2 curPos, Vector2 leftPos, Dictionary<Vector2, float> changes)
+{
+    if (left.Id == 0 || left.Id == BlockId)
+    {
+        float flow = (remainingValue - left.liquid) / 4f;
+        if (flow > MinFlow)
+            flow *= FlowSpeed;
+
+        flow = Mathf.Max(flow, 0);
+        if (flow > Mathf.Min(MaxFlow, remainingValue))
+            flow = Mathf.Min(MaxFlow, remainingValue);
+
+        if (flow != 0)
+        {
+            remainingValue -= flow;
+            changes[curPos] -= flow;
+            changes[leftPos] += flow;
+            left.settled = false;
+        }
+    }
+
+    return remainingValue;
+}
+
+float FlowRight(ref Block right, float remainingValue, Vector2 curPos, Vector2 rightPos, Dictionary<Vector2, float> changes)
+{
+    if (right.Id == 0 || right.Id == BlockId)
+    {
+        float flow = (remainingValue - right.liquid) / 3f;
+        if (flow > MinFlow)
+            flow *= FlowSpeed;
+
+        // constrain flow
+        flow = Mathf.Max(flow, 0);
+        if (flow > Mathf.Min(MaxFlow, remainingValue))
+            flow = Mathf.Min(MaxFlow, remainingValue);
+
+        // Adjust temp values
+        if (flow != 0)
+        {
+            remainingValue -= flow;
+            changes[curPos] -= flow;
+            changes[rightPos] += flow;
+            right.settled = false;
+        }
+    }
+
+    return remainingValue;
+}
+
+float FlowUp(ref Block top, float remainingValue, Vector2 curPos, Vector2 topPos, Dictionary<Vector2, float> changes)
+{
+    if (top.Id == 0 || top.Id == BlockId)
+    {
+        float flow = remainingValue - CalcVertFlow(remainingValue, top);
+        if (flow > MinFlow)
+            flow *= FlowSpeed;
+
+        flow = Mathf.Max(flow, 0);
+        if (flow > Mathf.Min(MaxFlow, remainingValue))
+            flow = Mathf.Min(MaxFlow, remainingValue);
+
+        if (flow != 0)
+        {
+            remainingValue -= flow;
+            changes[curPos] -= flow;
+            changes[topPos] += flow;
+            top.settled = false;
+        }
+    }
+
+    return remainingValue;
+}
+
+void UpdateSettling(ref Block block, ref Block top, ref Block right, ref Block bottom, ref Block left, float startValue, float remainingValue)
+{
+    if (startValue == remainingValue)
+    {
+        block.settle_count++;
+        if (block.settle_count >= 10)
+            block.settled = true;
+    }
+    else
+    {
+        top.settled = false;
+        right.settled = false;
+        bottom.settled = false;
+        left.settled = false;
+    }
+
+    if (!block.settled)
+        block.settle_count = 0;
+}
+
+void ApplyChanges(Dictionary<Vector2, float> changes)
+{
+    foreach (Vector2 change in changes.Keys)
+    {
+        float value = changes[change];
+        ref Block block = ref data_node.get_blockb((int)change.x, (int)change.y, layer.Id);
+        block.liquid += value;
+
+        if (block.liquid < MinValue && block.Id == BlockId)
+            block.Id = 0;
+
+        if (block.Id == 0 && block.liquid >= MinValue)
+            block.Id = BlockId;
+    }
+}
 ```
 
 
