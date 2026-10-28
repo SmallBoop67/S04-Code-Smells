@@ -75,8 +75,7 @@ Most of the time, long functions can be refactored through Extract Function. Lon
 
 ### Code Examples Across Languages
 
-### Rust
-```
+```rust
     pub fn ray_cast(
         &mut self,
         mode: i32,
@@ -414,8 +413,7 @@ Most of the time, long functions can be refactored through Extract Function. Lon
 }
 ```
 
-### C#
-```
+```c#
 void Simulate()
 {
     Rect2 renderRect = data_node.get_render_rect();
