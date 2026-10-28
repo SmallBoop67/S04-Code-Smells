@@ -167,31 +167,102 @@ Some ways to prevent and fix this code smell include:
 
 Instead of calculating sales tax separately in multiple files, we can create on function responsible for calculating tax. Other parts of the program can call that function whenever they need it. This makes the code easier to maintain because future changes only need to happen in one places.
 
-### Code Examples Across Languages 
-Python:
+### Python
+
+Smell:
+
+```python 
 # checkout.py
 def checkout(price):
     return price * 1.08
 
 # billing.py
 def billing(price):
-    return price * 1.08
+    return round(price * 1.08, 2)
 
 # receipt.py
 def receipt(price):
-    return price * 1.08
+    return f"Total: ${price * 1.08:.2f} (includes 8% tax)"
+``` 
+After Move Function (the tax logic gathered into one module):
 
+```python
+# tax.py
+TAX_RATE = 0.08
+
+def with_tax(price):
+    return round(price * (1 + TAX_RATE), 2)
+
+def tax_label():
+    return f"includes {TAX_RATE:.0%} tax"
+
+# checkout.py
+from tax import with_tax
+def checkout(price):
+    return with_tax(price)
+
+# billing.py
+from tax import with_tax
+def billing(price):
+    return with_tax(price)
+
+# receipt.py
+from tax import with_tax, tax_label
+def receipt(price):
+    return f"Total: ${with_tax(price):.2f} ({tax_label()})"
+``` 
 ----------------------------------------------------------------------------------
+### JavaScript
 
-JavaScript: 
+```javascript
+// checkout.js
 function checkout(price) {
     return price * 1.08;
 }
 
+// billing.js
 function billing(price) {
-    return price * 1.08;
+    return Math.round(price * 1.08 * 100) / 100;
 }
 
+// receipt.js
 function receipt(price) {
-    return price * 1.08;
+    return `Total: $${(price * 1.08).toFixed(2)} (includes 8% tax)`;
 }
+```
+
+After Move Function (the tax logic gathered into one module):
+
+```javascript
+// tax.js
+export const TAX_RATE = 0.08;
+
+export function withTax(price) {
+    return Math.round(price * (1 + TAX_RATE) * 100) / 100;
+}
+
+export function taxLabel() {
+    return `includes ${TAX_RATE * 100}% tax`;
+}
+
+// checkout.js
+import { withTax } from "./tax.js";
+
+export function checkout(price) {
+    return withTax(price);
+}
+
+// billing.js
+import { withTax } from "./tax.js";
+
+export function billing(price) {
+    return withTax(price);
+}
+
+// receipt.js
+import { withTax, taxLabel } from "./tax.js";
+
+export function receipt(price) {
+    return `Total: $${withTax(price).toFixed(2)} (${taxLabel()})`;
+}
+```
