@@ -54,14 +54,73 @@ Most of the time, long functions can be refactored through Extract Function. Lon
 
 
 
-## Code Smell 3 
+## Code Smell 3 - Loops - Daniel Tubman
 ### Intro 
-
+Loops have been a well used staple of programming for a long time as they are simple to understand and they used to be the only option. The code smell of loops starts to arise when they are being used to do multiple things at once which make it hard for readers to understand and trace the function. Because of this, nowadays there are better options for implementing large and complex functions rather than using a loop as the problem isn’t the use of loops in general but rather loops being used for too many things at once.
 
 ### Prevention and Refactoring 
-
+To avoid this code smell, you should be expressing collection processing as a pipeline of operations like filter and map instead of writing a loop first since each step then names its own job. It is also important to pay attention to loops that fill an accumulator or do several jobs at once.
+To fix the code smell when you already have a loop, Fowler recommends using the “Replace Loop with Pipeline” practice. First, you create a new variable for the loop’s collection. Next, you replace each piece of the loop with a pipeline operation, all the while testing after each change. Finally, once everything has been converted to a pipeline operation, you then remove the loop and, if the loop was filling an accumulator, assign the new pipeline’s result to the accumulator’s variable.
 
 ### Code Examples Across Languages
+
+### JavaScript
+
+Smell (Page 232, in Chapter 8 of Fowler's Refactoring):
+```javascript 
+function acquireData(input) {
+const lines = input.split("\n");
+let firstLine = true;
+const result = [];
+for (const line of lines) {
+if (firstLine) {
+firstLine = false;
+continue;
+}
+if (line.trim() === "") continue;
+const record = line.split(",");
+if (record[1].trim() === "India") {
+result.push({city: record[0].trim(), phone: record[2].trim()});
+}
+}
+return result;
+}
+``` 
+In this JavaScript example, the code smell shows up in the form of the for-of loop trying to do 4 things at once, skipping the header, dropping blank lines, filtering by country, and building the output objects. Due to this, a lot of variables have to constantly be updated and kept track of which gets messy.
+
+After Replace Loop with Pipeline (Page 236, in Chapter 8 of Fowler's Refactoring): 
+```javascript 
+function acquireData(input) {
+const lines = input.split("\n");
+return lines
+.slice (1)
+.filter (line => line.trim() !== "")
+.map (line => line.split(","))
+.filter (fields => fields[1].trim() === "India")
+.map (fields => ({city: fields[0].trim(), phone: fields[2].trim()}))
+;
+}
+``` 
+After applying Fowler’s recommended refactoring method, each job now has its own named step. Another result of this is that the code is much more readable and streamlined with the fluff (firstLine, continue, result) replaced.
+
+### Python
+Smell (https://docs.sourcery.ai/reference/refactorings/python/reintroduce-else):
+```python 
+summer_hats = []
+for hat in hats:
+    if hat in WINTER_HATS:
+        continue
+    summer_hats.append(hat)
+``` 
+In this Python example the code smell shows up in the form of a for-in function doing two things at once, skipping winter hats with continue and building a result by appending to a list. The multiple jobs being performed by the loop makes it harder to parse and it can make it more confusing then it needs to be for a reader when trying to figure out what it does.
+
+After Refactoring: 
+```python 
+summer_hats = [hat for hat in hats if hat not in WINTER_HATS] 
+``` 
+After refactoring this example code in a similar way to Fowler’s idea, we now have much more compact and easier to read code. The filter and the construction of the list have been combined together into the declaration of what summer_hats is and the continue and the accumulator have been removed.
+
+
 
 
 
