@@ -1,14 +1,45 @@
 # S04-Code-Smells
-## Code Smell 1 
+## Code Smell 1 - Speculative Generality - Ethan Kwak
 ### Intro 
 
+Sometimes people overprepare by adding features that don’t need to exist. By adding all these special cases and hooks that never get used it becomes harder to organize and maintain. 
 
 ### Prevention and Refactoring 
 
+**Collapse Hierarchy** is when you are refactoring a hierarchy and as the hierarchy evolves a class and a parent are no longer different enough to be kept separate resulting in a merger. **Inline Function** is when you have a function that’s code is as clear as its name so it does not need to exist or when simple delegation is given to another function that does not need to exist. **Inline Class** is when a class is no longer needed and shouldn’t be taking up space as all of its responsibilities have been allocated elsewhere so usually the runt class gets absorbed by another one. **Change Function Declaration** is when you alter a function’s name or parameters to improve clarity and visibility without changing the function’s observable behaviors. **Remove Dead Code** is when you remove code that no longer serves a purpose whether it be commented out or does nothing.
 
 ### Code Examples Across Languages
 
+class Employee:
 
+  def __init__(self, name, phone_number):
+    self.name = name
+    self.phone_number = phone_number
+
+  def get_contact_info(self):
+    return self.phone_number
+
+
+class Salesman(Employee):
+
+  def __init__(self, name, phone_number, commission_rate):
+    super().__init__(name, phone_number)
+    self.commission_rate = commission_rate
+
+  def get_commission(self):
+    return self.commission_rate
+
+This is a snippet of Python code that exhibits **Collapse Hierarchy**. As we can see the Salesman class is redundant of the Employee class so we would remove it altogether moving the get_commision function into the Employee class.
+
+function processPayment(amount) {
+  if (amount <= 0) {
+    return "Invalid amount";
+    console.log("This will never print"); 
+  }
+  return `Charged $${amount}`;
+}
+
+This is a snippet of Javascript code that has **Dead Code**. Since console.log will never print due to it being right after a return statement it no longer serves a purpose and should be removed.
 
 ## Code Smell 2 - Long Function - Dan Pokhrel
 ### Intro 
