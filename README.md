@@ -75,6 +75,7 @@ Most of the time, long functions can be refactored through Extract Function. Lon
 
 ### Code Examples Across Languages
 
+### Example showing **Long Function**
 ```rust
     pub fn ray_cast(
         &mut self,
@@ -413,6 +414,11 @@ Most of the time, long functions can be refactored through Extract Function. Lon
 }
 ```
 
+### Refactored using **Extract Function**
+```rust
+```
+
+### Another ***Long Function***
 ```c#
 void Simulate()
 {
@@ -607,6 +613,10 @@ void Simulate()
 
     Update();
 }
+```
+
+### Refactored using **Long Function**
+```c#
 ```
 
 
