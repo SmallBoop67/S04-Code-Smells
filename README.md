@@ -126,7 +126,7 @@ return lines
 }
 ``` 
 After applying Fowler’s recommended refactoring method, each job now has its own named step. Another result of this is that the code is much more readable and streamlined with the fluff (firstLine, continue, result) replaced.
-
+----------------------------------------------------------------------------------
 ### Python
 Smell (https://docs.sourcery.ai/reference/refactorings/python/reintroduce-else):
 ```python 
