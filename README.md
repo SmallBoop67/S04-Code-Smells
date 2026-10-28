@@ -67,15 +67,549 @@ function processPayment(amount) {
 ```
 ## Code Smell 2 - Long Function - Dan Pokhrel
 ### Intro 
-
-The longer a function gets the harder it becomes to understand. This typically arises from adding functionality to one function until it becomes too big. Long functions demand the reader to process a bigger context and make it harder to understand what it does. 
+The longer a function gets the harder it becomes to understand. Flower explains, *"the programs that live the best and longest are those with short functions."* Long functions demand the reader to process a bigger context which makes it harder to understand what the code does. This smell typically arises from adding functionality to one function until it becomes too big. There's also the psychological aspect of codebases with short functions making it feels like it all delegation with little to no computation. 
 
 ### Prevention and Refactoring 
-
-Most of the time, long functions can be refactored through Extract Function. Long functions are typically composed of multiple related tasks which can be extracted into their own functions. This smell can also be avoided by keeping related behaviors into their own small functions to avoid them building up into one long function. 
+Most of the time, long functions can be refactored through Extract Function. Long functions are typically composed of multiple steps or tasks which can be extracted into their own functions. This smell can also be avoided by keeping related behaviors into their own small functions to avoid them building up into one long function. Flower states, 
+> “Whenever we feel the need to comment something, we write a function instead.”
 
 ### Code Examples Across Languages
 
+### Rust
+```
+    pub fn ray_cast(
+        &mut self,
+        mode: i32,
+        ox: f32,
+        oy: f32,
+        oz: f32,
+        dx: f32,
+        dy: f32,
+        dz: f32,
+    ) -> Vec<i32> {
+        if self.arr.is_none() {
+            return vec![
+                0,
+                i32::MAX,
+                i32::MAX,
+                i32::MAX,
+                0,
+                i32::MAX,
+                i32::MAX,
+                i32::MAX,
+            ];
+        }
+        let arr = self.arr.as_mut().unwrap();
+
+        // Transform to local coordinates
+        let mut local_ox = ox - self.origin.0 as f32;
+        let mut local_oy = oy - self.origin.1 as f32;
+        let mut local_oz = oz - self.origin.2 as f32;
+
+        // Compute entry point into the chunk bounding box
+        let mut t_min = 0.0f32;
+        let mut t_max = f32::INFINITY;
+        let mut t_min_x = f32::NEG_INFINITY;
+        let mut t_min_y = f32::NEG_INFINITY;
+        let mut t_min_z = f32::NEG_INFINITY;
+
+        // For x
+        if dx != 0.0 {
+            let t1 = (0.0 - local_ox) / dx;
+            let t2 = (SIZE as f32 - local_ox) / dx;
+            t_min_x = t1.min(t2);
+            let t_max_x = t1.max(t2);
+            t_min = t_min.max(t_min_x);
+            t_max = t_max.min(t_max_x);
+        } else if local_ox < 0.0 || local_ox >= SIZE as f32 {
+            return vec![
+                0,
+                i32::MAX,
+                i32::MAX,
+                i32::MAX,
+                0,
+                i32::MAX,
+                i32::MAX,
+                i32::MAX,
+            ];
+        }
+
+        // For y
+        if dy != 0.0 {
+            let t1 = (0.0 - local_oy) / dy;
+            let t2 = (SIZE as f32 - local_oy) / dy;
+            t_min_y = t1.min(t2);
+            let t_max_y = t1.max(t2);
+            t_min = t_min.max(t_min_y);
+            t_max = t_max.min(t_max_y);
+        } else if local_oy < 0.0 || local_oy >= SIZE as f32 {
+            return vec![
+                0,
+                i32::MAX,
+                i32::MAX,
+                i32::MAX,
+                0,
+                i32::MAX,
+                i32::MAX,
+                i32::MAX,
+            ];
+        }
+
+        // For z
+        if dz != 0.0 {
+            let t1 = (0.0 - local_oz) / dz;
+            let t2 = (SIZE as f32 - local_oz) / dz;
+            t_min_z = t1.min(t2);
+            let t_max_z = t1.max(t2);
+            t_min = t_min.max(t_min_z);
+            t_max = t_max.min(t_max_z);
+        } else if local_oz < 0.0 || local_oz >= SIZE as f32 {
+            return vec![
+                0,
+                i32::MAX,
+                i32::MAX,
+                i32::MAX,
+                0,
+                i32::MAX,
+                i32::MAX,
+                i32::MAX,
+            ];
+        }
+
+        if t_min > t_max {
+            return vec![
+                0,
+                i32::MAX,
+                i32::MAX,
+                i32::MAX,
+                0,
+                i32::MAX,
+                i32::MAX,
+                i32::MAX,
+            ];
+        }
+
+        let entry_step_x = if t_min > 0.0 && dx != 0.0 && (t_min - t_min_x).abs() < 1e-6 {
+            if dx > 0.0 {
+                1
+            } else {
+                -1
+            }
+        } else {
+            0
+        };
+        let entry_step_y = if t_min > 0.0 && dy != 0.0 && (t_min - t_min_y).abs() < 1e-6 {
+            if dy > 0.0 {
+                1
+            } else {
+                -1
+            }
+        } else {
+            0
+        };
+        let entry_step_z = if t_min > 0.0 && dz != 0.0 && (t_min - t_min_z).abs() < 1e-6 {
+            if dz > 0.0 {
+                1
+            } else {
+                -1
+            }
+        } else {
+            0
+        };
+
+        // Move to entry point
+        local_ox += dx * t_min;
+        local_oy += dy * t_min;
+        local_oz += dz * t_min;
+
+        // Current voxel
+        let mut x = local_ox.floor() as i32;
+        let mut y = local_oy.floor() as i32;
+        let mut z = local_oz.floor() as i32;
+
+        // Step directions
+        let step_x = if dx > 0.0 {
+            1
+        } else if dx < 0.0 {
+            -1
+        } else {
+            0
+        };
+        let step_y = if dy > 0.0 {
+            1
+        } else if dy < 0.0 {
+            -1
+        } else {
+            0
+        };
+        let step_z = if dz > 0.0 {
+            1
+        } else if dz < 0.0 {
+            -1
+        } else {
+            0
+        };
+
+        let mut face_step_x = entry_step_x;
+        let mut face_step_y = entry_step_y;
+        let mut face_step_z = entry_step_z;
+        if face_step_x == 0 && face_step_y == 0 && face_step_z == 0 {
+            if dx.abs() >= dy.abs() && dx.abs() >= dz.abs() {
+                face_step_x = step_x;
+            } else if dy.abs() >= dx.abs() && dy.abs() >= dz.abs() {
+                face_step_y = step_y;
+            } else {
+                face_step_z = step_z;
+            }
+        }
+
+        // tMax calculations
+        let mut t_max_x = if step_x > 0 {
+            ((x as f32) + 1.0 - local_ox) / dx
+        } else if step_x < 0 {
+            ((x as f32) - local_ox) / dx
+        } else {
+            f32::INFINITY
+        };
+        let mut t_max_y = if step_y > 0 {
+            ((y as f32) + 1.0 - local_oy) / dy
+        } else if step_y < 0 {
+            ((y as f32) - local_oy) / dy
+        } else {
+            f32::INFINITY
+        };
+        let mut t_max_z = if step_z > 0 {
+            ((z as f32) + 1.0 - local_oz) / dz
+        } else if step_z < 0 {
+            ((z as f32) - local_oz) / dz
+        } else {
+            f32::INFINITY
+        };
+
+        // tDelta
+        let t_delta_x = if step_x != 0 {
+            step_x as f32 / dx
+        } else {
+            f32::INFINITY
+        };
+        let t_delta_y = if step_y != 0 {
+            step_y as f32 / dy
+        } else {
+            f32::INFINITY
+        };
+        let t_delta_z = if step_z != 0 {
+            step_z as f32 / dz
+        } else {
+            f32::INFINITY
+        };
+
+        // Traverse
+        for _ in 0..(SIZE * 3) {
+            if x >= 0 && x < SIZE as i32 && y >= 0 && y < SIZE as i32 && z >= 0 && z < SIZE as i32 {
+                let idx = xyz_idx(x as u8, y as u8, z as u8);
+                let voxel_id = arr[idx];
+                if voxel_id != 0 {
+                    let mut modified_x = x;
+                    let mut modified_y = y;
+                    let mut modified_z = z;
+
+                    if mode == 0 {
+                        arr[idx] = 0;
+                    } else if mode > 0 {
+                        let target_x = x - face_step_x;
+                        let target_y = y - face_step_y;
+                        let target_z = z - face_step_z;
+                        if target_x >= 0
+                            && target_x < SIZE as i32
+                            && target_y >= 0
+                            && target_y < SIZE as i32
+                            && target_z >= 0
+                            && target_z < SIZE as i32
+                        {
+                            let target_idx =
+                                xyz_idx(target_x as u8, target_y as u8, target_z as u8);
+                            arr[target_idx] = mode as u8;
+                            modified_x = target_x;
+                            modified_y = target_y;
+                            modified_z = target_z;
+                        }
+                    }
+
+                    let status = if modified_x == 0
+                        || modified_x == (SIZE as i32 - 1)
+                        || modified_y == 0
+                        || modified_y == (SIZE as i32 - 1)
+                        || modified_z == 0
+                        || modified_z == (SIZE as i32 - 1)
+                    {
+                        2
+                    } else if modified_x == 1
+                        || modified_x == (SIZE as i32 - 2)
+                        || modified_y == 1
+                        || modified_y == (SIZE as i32 - 2)
+                        || modified_z == 1
+                        || modified_z == (SIZE as i32 - 2)
+                    {
+                        1
+                    } else {
+                        0
+                    };
+
+                    return vec![
+                        voxel_id as i32,
+                        x,
+                        y,
+                        z,
+                        status,
+                        modified_x,
+                        modified_y,
+                        modified_z,
+                    ];
+                }
+            } else {
+                return vec![
+                    0,
+                    i32::MAX,
+                    i32::MAX,
+                    i32::MAX,
+                    0,
+                    i32::MAX,
+                    i32::MAX,
+                    i32::MAX,
+                ];
+            }
+
+            if t_max_x < t_max_y && t_max_x < t_max_z {
+                x += step_x;
+                face_step_x = step_x;
+                face_step_y = 0;
+                face_step_z = 0;
+                t_max_x += t_delta_x;
+            } else if t_max_y < t_max_z {
+                y += step_y;
+                face_step_x = 0;
+                face_step_y = step_y;
+                face_step_z = 0;
+                t_max_y += t_delta_y;
+            } else {
+                z += step_z;
+                face_step_x = 0;
+                face_step_y = 0;
+                face_step_z = step_z;
+                t_max_z += t_delta_z;
+            }
+        }
+
+        vec![
+            0,
+            i32::MAX,
+            i32::MAX,
+            i32::MAX,
+            0,
+            i32::MAX,
+            i32::MAX,
+            i32::MAX,
+        ]
+    }
+}
+```
+
+### C#
+```
+void Simulate()
+{
+    Rect2 renderRect = data_node.get_render_rect();
+    renderRect.Position += new Vector2(1, 1);
+    renderRect.Size -= new Vector2(2, 2);
+
+    Dictionary<Vector2, float> changes = new Dictionary<Vector2, float>();
+
+    for (int x = (int)renderRect.Position.x; x < renderRect.End.x; x++)
+    for (int y = (int)renderRect.Position.y; y < renderRect.End.y; y++)
+    {
+        Block block = data_node.get_blockb(x, y, layer.Id);
+        if (block.Id != BlockId) continue;
+
+        if (block.liquid == 0) block.liquid = 1;
+        if (block.liquid < MinValue)
+        {
+            block.liquid = 0f;
+            continue;
+        };
+        if (block.settled) continue;
+
+        float startValue = block.liquid;
+        float remainingValue = block.liquid;
+        float flow = 0;
+
+        ref Block top = ref data_node.get_blockb(x, y-1, layer.Id);
+        ref Block right = ref data_node.get_blockb(x+1, y, layer.Id);
+        ref Block bottom = ref data_node.get_blockb(x, y+1, layer.Id);
+        ref Block left = ref data_node.get_blockb(x-1, y, layer.Id);
+
+        Vector2 curPos = new Vector2(x, y);
+        Vector2 topPos = new Vector2(x, y-1);
+        Vector2 rightPos = new Vector2(x+1, y);
+        Vector2 bottomPos = new Vector2(x, y+1);
+        Vector2 leftPos = new Vector2(x-1, y);
+
+        // Initilize Changes
+        if (!changes.ContainsKey(curPos)) changes[curPos] = 0;
+        if (!changes.ContainsKey(topPos)) changes[topPos] = 0;
+        if (!changes.ContainsKey(rightPos)) changes[rightPos] = 0;
+        if (!changes.ContainsKey(bottomPos)) changes[bottomPos] = 0;
+        if (!changes.ContainsKey(leftPos)) changes[leftPos] = 0;
+
+
+        if (VerticalOnly)
+        {
+            if (bottom.Id == 0)
+            {
+                changes[new Vector2(x, y)] = -1;
+                changes[new Vector2(x, y+1)] = 1;
+            }
+            
+            continue;
+        }
+
+
+        if (bottom.Id == 0 || bottom.Id == BlockId)
+        {
+            flow = CalcVertFlow(block.liquid, bottom) - bottom.liquid;
+            if (bottom.liquid > 0 && flow > MinFlow)
+                flow *= FlowSpeed;
+            
+            flow = Mathf.Max (flow, 0);
+            if (flow > Mathf.Min(MaxFlow, block.liquid)) 
+                flow = Mathf.Min(MaxFlow, block.liquid);
+            
+            if (flow != 0)
+            {
+                remainingValue -= flow;
+                changes[curPos] -= flow;
+                changes[bottomPos] += flow;
+                bottom.settled = false;
+    }
+        }
+
+        if (remainingValue < MinValue)
+        {
+            changes[curPos] -= remainingValue;
+            continue;
+        }
+
+
+        //Flow left
+        if (left.Id == 0 || left.Id == BlockId)
+        {
+            flow = (remainingValue - left.liquid) / 4f;
+            if (flow > MinFlow)
+                flow *= FlowSpeed;
+
+            flow = Mathf.Max (flow, 0);
+            if (flow > Mathf.Min(MaxFlow, remainingValue)) 
+                flow = Mathf.Min(MaxFlow, remainingValue);
+
+            if (flow != 0) {
+                remainingValue -= flow;
+                changes[curPos] -= flow;
+                changes[leftPos] += flow;
+                left.settled = false;
+            }
+        }
+
+        if (remainingValue < MinValue)
+        {
+            changes[curPos] -= remainingValue;
+            continue;
+        }
+
+
+        // Flow right
+        if (right.Id == 0 || right.Id == BlockId)
+        {
+            flow = (remainingValue - right.liquid) / 3f;										
+            if (flow > MinFlow)
+                flow *= FlowSpeed; 
+
+            // constrain flow
+            flow = Mathf.Max (flow, 0);
+            if (flow > Mathf.Min(MaxFlow, remainingValue)) 
+                flow = Mathf.Min(MaxFlow, remainingValue);
+            
+            // Adjust temp values
+            if (flow != 0) {
+                remainingValue -= flow;
+                changes[curPos] -= flow;
+                changes[rightPos] += flow;
+                right.settled = false;
+            } 
+        }
+
+        if (remainingValue < MinValue)
+        {
+            changes[curPos] -= remainingValue;
+            continue;
+        }
+
+
+        //Flow up
+        if (top.Id == 0 || top.Id == BlockId)
+        {
+            flow = remainingValue - CalcVertFlow(remainingValue, top); 
+            if (flow > MinFlow)
+                flow *= FlowSpeed; 
+
+            flow = Mathf.Max (flow, 0);
+            if (flow > Mathf.Min(MaxFlow, remainingValue)) 
+                flow = Mathf.Min(MaxFlow, remainingValue);
+
+            if (flow != 0) {
+                remainingValue -= flow;
+                changes[curPos] -= flow;
+                changes[topPos] += flow;
+                top.settled = false;
+            } 
+        }
+
+        if (remainingValue < MinValue)
+        {
+            changes[curPos] -= remainingValue;
+            continue;
+        }
+
+        if (startValue == remainingValue)
+        {
+            block.settle_count++;
+            if (block.settle_count >= 10)
+                block.settled = true;
+        }else{
+            top.settled = false;
+            right.settled = false;
+            bottom.settled = false;
+            left.settled = false;
+        }
+        
+        if (!block.settled)
+            block.settle_count = 0;
+    }
+
+    foreach (Vector2 change in changes.Keys)
+    {
+        float value = changes[change];
+        ref Block block = ref data_node.get_blockb((int)change.x, (int)change.y, layer.Id);
+        block.liquid += value;
+
+        if (block.liquid < MinValue && block.Id==BlockId)
+            block.Id = 0;
+        
+        if (block.Id == 0 && block.liquid >= MinValue)
+            block.Id = BlockId;
+    }
+
+    Update();
+}
+```
 
 
 ## Code Smell 3 - Loops - Daniel Tubman
