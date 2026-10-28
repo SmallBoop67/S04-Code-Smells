@@ -31,6 +31,18 @@ class Salesman(Employee):
 
 This is a snippet of Python code that exhibits **Collapse Hierarchy**. As we can see the Salesman class is redundant of the Employee class so we would remove it altogether moving the get_commision function into the Employee class.
 
+class Employee:
+    def __init__(self, name, phone_number, commission_rate):
+        self.name = name
+        self.phone_number = phone_number
+        self.commission_rate = commission_rate
+
+    def get_contact_info(self):
+        return self.phone_number
+
+    def get_commission(self):
+        return self.commission_rate
+
 function processPayment(amount) {
   if (amount <= 0) {
     return "Invalid amount";
@@ -40,6 +52,13 @@ function processPayment(amount) {
 }
 
 This is a snippet of Javascript code that has **Dead Code**. Since console.log will never print due to it being right after a return statement it no longer serves a purpose and should be removed.
+
+function processPayment(amount) {
+  if (amount <= 0) {
+    return "Invalid amount";
+  }
+  return `Charged $${amount}`;
+}
 
 ## Code Smell 2 - Long Function - Dan Pokhrel
 ### Intro 
